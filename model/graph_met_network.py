@@ -47,11 +47,12 @@ class GraphMETNetwork(nn.Module):
                                    )
         self.pdgs = [1, 2, 11, 13, 22, 130, 211]
 
-        # Debug variables to be removed later
+        # Intermediate variables to be removed later
         self._emb_cont = None
         self._emb_chrg = None
         self._emb_pdg = None
         self._emb_cat = None
+        self._emb = None
         self._emb1 = None
         self._emb2 = None
         self._out = None
