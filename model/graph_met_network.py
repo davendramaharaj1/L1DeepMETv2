@@ -52,7 +52,9 @@ class GraphMETNetwork(nn.Module):
         self._emb_chrg = None
         self._emb_pdg = None
         self._emb_cat = None
-        self._emb = None
+        self._emb1 = None
+        self._emb2 = None
+        self._out = None
 
     def forward(self, x_cont, x_cat, edge_index, batch):
         # Normalize the input values within [0,1] range: pt, px, py, eta, phi, puppiWeight, pdgId, charge
@@ -60,26 +62,39 @@ class GraphMETNetwork(nn.Module):
 
         x_cont *= self.datanorm
 
-        emb_cont = self.embed_continuous(x_cont)        
+        emb_cont = self.embed_continuous(x_cont)
+        self._emb_cont = emb_cont.detach().clone()   
+
         emb_chrg = self.embed_charge(x_cat[:, 1] + 1)
+        self._emb_chrg = emb_chrg.detach().clone()
         #emb_pv = self.embed_pv(x_cat[:, 2])
 
         pdg_remap = torch.abs(x_cat[:, 0])
         for i, pdgval in enumerate(self.pdgs):
             pdg_remap = torch.where(pdg_remap == pdgval, torch.full_like(pdg_remap, i), pdg_remap)
         emb_pdg = self.embed_pdgid(pdg_remap)
+        self._emb_pdg = emb_pdg.detach().clone()
 
         emb_cat = self.embed_categorical(torch.cat([emb_chrg, emb_pdg], dim=1))
         #emb_cat = self.embed_categorical(torch.cat([emb_chrg, emb_pdg, emb_pv], dim=1))
+        self._emb_cat = emb_cat.detach().clone()
+
         emb = self.bn_all(self.encode_all(torch.cat([emb_cat, emb_cont], dim=1)))
+        self._emb = emb.detach().clone()
                 
         # graph convolution for continuous variables
-        for co_conv in self.conv_continuous:
+        for i, co_conv in enumerate(self.conv_continuous):
             #dynamic, evolving knn
             #emb = emb + co_conv[1](co_conv[0](emb, knn_graph(emb, k=20, batch=batch, loop=True)))
             #static
             emb = emb + co_conv[1](co_conv[0](emb, edge_index))
+
+            if i == 0:
+                self._emb1 = emb.detach().clone()
+            else:
+                self._emb2 = emb.detach().clone()
                 
         out = self.output(emb)
+        self._out = out.detach().clone()
         
         return out.squeeze(-1)
