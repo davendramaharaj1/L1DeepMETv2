@@ -47,6 +47,13 @@ class GraphMETNetwork(nn.Module):
                                    )
         self.pdgs = [1, 2, 11, 13, 22, 130, 211]
 
+        # Debug variables to be removed later
+        self._emb_cont = None
+        self._emb_chrg = None
+        self._emb_pdg = None
+        self._emb_cat = None
+        self._emb = None
+
     def forward(self, x_cont, x_cat, edge_index, batch):
         # Normalize the input values within [0,1] range: pt, px, py, eta, phi, puppiWeight, pdgId, charge
         #norm = torch.tensor([1./2950., 1./2950, 1./2950, 1., 1., 1.]).to(device) 
